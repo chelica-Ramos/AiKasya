@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Trash2, X } from "lucide-react";
-import { BrandImage, BottomNav, Header, type Screen, type T } from "./components";
+import {
+  BrandImage,
+  BottomNav,
+  Header,
+  type Screen,
+  type T,
+} from "./components";
 import { en, fil, type TranslationKey } from "./i18n";
 import { useAppState } from "./state";
 import { groceries, recipes } from "./data";
@@ -100,7 +106,10 @@ export default function App() {
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setChatOpen(false);
-        (chatLauncher.current ?? document.querySelector<HTMLButtonElement>(".greeting-mascot"))?.focus();
+        (
+          chatLauncher.current ??
+          document.querySelector<HTMLButtonElement>(".kasya-assistant-bar")
+        )?.focus();
       }
     };
     window.addEventListener("keydown", close);
@@ -133,6 +142,49 @@ export default function App() {
       ),
     ]);
 
+  const renderChat = (inline: boolean) => (
+    <section
+      className={inline ? "inline-chat" : "floating-chat"}
+      role={inline ? "region" : "dialog"}
+      aria-label={t("chat")}
+      id="mascot-chat"
+    >
+      <header className="floating-chat-header">
+        <BrandImage kind="mascot" />
+        <h2>{t("chat")}</h2>
+        <button
+          className="icon-button"
+          aria-label={t("clearChat")}
+          onClick={() => setState((s) => ({ ...s, messages: [] }))}
+        >
+          <Trash2 size={18} />
+        </button>
+        <button
+          className="icon-button"
+          aria-label={
+            state.language === "fil" ? "Isara ang chat" : "Close chat"
+          }
+          onClick={() => {
+            setChatOpen(false);
+            (
+              chatLauncher.current ??
+              document.querySelector<HTMLButtonElement>(".kasya-assistant-bar")
+            )?.focus();
+          }}
+        >
+          <X size={20} />
+        </button>
+      </header>
+      <AIChat
+        embedded={inline}
+        state={state}
+        setState={setState}
+        t={t}
+        onDetails={() => navigate("meals")}
+      />
+    </section>
+  );
+
   let content: ReactNode;
   switch (screen) {
     case "welcome":
@@ -151,9 +203,12 @@ export default function App() {
         <Home
           state={state}
           t={t}
-          onChat={() => setChatOpen(open => !open)}
+          onChat={() => setChatOpen((open) => !open)}
           chatOpen={chatOpen}
-          onHouseholdChange={(field, value) => setState(s => ({ ...s, [field]: value }))}
+          chatContent={chatOpen ? renderChat(true) : null}
+          onHouseholdChange={(field, value) =>
+            setState((s) => ({ ...s, [field]: value }))
+          }
           online={online}
           money={money}
           navigate={navigate}
@@ -165,8 +220,8 @@ export default function App() {
         <BudgetSetup
           state={state}
           t={t}
-          onSave={(budget, people, days) => {
-            setState((s) => ({ ...s, budget, people, days }));
+          onSave={(budget, people, days, allergies) => {
+            setState((s) => ({ ...s, budget, people, days, allergies }));
             navigate("home");
           }}
         />
@@ -255,7 +310,9 @@ export default function App() {
       break;
   }
   return (
-    <div className={`app-shell ${screen === "welcome" ? "is-welcome" : screen === "home" ? "is-home" : ""}`}>
+    <div
+      className={`app-shell ${screen === "welcome" ? "is-welcome" : screen === "home" ? "is-home" : screen === "budget" ? "is-budget" : ""}`}
+    >
       {storageError && (
         <p className="notice" role="status">
           {t("storageError")}
@@ -288,29 +345,24 @@ export default function App() {
               >
                 <Trash2 size={21} />
               </button>
-            ) : undefined
+            ) : (
+              <button
+                ref={chatLauncher}
+                className="header-chat-button"
+                aria-label={t("chat")}
+                aria-expanded={chatOpen}
+                aria-controls="mascot-chat"
+                onClick={() => setChatOpen((open) => !open)}
+              >
+                <BrandImage kind="mascot" />
+              </button>
+            )
           }
         />
       )}
       {content}
-      {screen !== "welcome" && screen !== "chat" && (
-        <>
-          {chatOpen && (
-            <section className="floating-chat" role="dialog" aria-label={t("chat")} id="mascot-chat">
-              <header className="floating-chat-header">
-                <BrandImage kind="mascot" />
-                <h2>{t("chat")}</h2>
-                <button className="icon-button" aria-label={t("clearChat")} onClick={() => setState(s => ({ ...s, messages: [] }))}><Trash2 size={18} /></button>
-                <button className="icon-button" aria-label={state.language === "fil" ? "Isara ang chat" : "Close chat"} onClick={() => { setChatOpen(false); (chatLauncher.current ?? document.querySelector<HTMLButtonElement>(".greeting-mascot"))?.focus(); }}><X size={20} /></button>
-              </header>
-              <AIChat state={state} setState={setState} t={t} onDetails={() => navigate("meals")} />
-            </section>
-          )}
-          {screen !== "home" && <button ref={chatLauncher} className={`mascot-launcher ${chatOpen ? "is-open" : ""}`} aria-label={t("chat")} aria-expanded={chatOpen} aria-controls="mascot-chat" onClick={() => setChatOpen(open => !open)}>
-            <span className="mascot-head"><BrandImage kind="mascot" /></span>
-            <span className="mascot-online" aria-hidden="true" />
-          </button>}
-        </>
+      {screen !== "welcome" && screen !== "chat" && screen !== "home" && (
+        <>{chatOpen && renderChat(false)}</>
       )}
       {notice && (
         <div className="toast" role="status">

@@ -6,12 +6,17 @@ test('Production PWA reloads offline with local assets and saved data',async({pa
  await page.waitForFunction(()=>Boolean(navigator.serviceWorker.controller));
  const manifest=await (await page.request.get('/manifest.webmanifest')).json();
  expect(manifest.display).toBe('standalone');expect(manifest.icons).toHaveLength(2);
+ await page.goto('/#budget');
+ await page.getByRole('checkbox',{name:'Peanuts',exact:true}).check();
+ await page.getByRole('button',{name:'Save Preferences',exact:true}).click();
  await page.getByRole('button',{name:'Grocery List',exact:true}).click();
  await page.getByRole('checkbox',{name:'Vegetables (1 bunch)'}).check();
  await context.setOffline(true);await page.reload();
  await expect(page.getByRole('heading',{name:'Grocery List',exact:true})).toBeVisible();
  await expect(page.getByRole('checkbox',{name:'Vegetables (1 bunch)'})).toBeChecked();
  await expect(page.getByText('You are offline. Your saved plans and lists are still available.')).toBeVisible();
+ await page.goto('/#budget');await page.reload();
+ await expect(page.getByRole('checkbox',{name:'Peanuts',exact:true})).toBeChecked();
  await page.getByRole('navigation').getByRole('button',{name:'Meals',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Meal Plan',exact:true})).toBeVisible();
  await page.evaluate(()=>document.fonts.ready);

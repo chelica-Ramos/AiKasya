@@ -13,7 +13,9 @@ export default function AIChat({
   setState,
   t,
   onDetails,
+  embedded = false,
 }: {
+  embedded?: boolean;
   state: State;
   setState: Dispatch<SetStateAction<State>>;
   t: T;
@@ -25,7 +27,10 @@ export default function AIChat({
     end.current?.scrollIntoView({ block: "nearest" });
   }, [state.messages.length]);
   const input = useRef<HTMLInputElement>(null);
-  useEffect(() => { input.current?.focus(); }, []);
+  useEffect(() => {
+    input.current?.focus();
+    if (embedded) input.current?.scrollIntoView({ block: "nearest" });
+  }, [embedded]);
   const send = (prompt = draft) => {
     const text = prompt.trim();
     if (!text) return;
@@ -44,8 +49,9 @@ export default function AIChat({
     }));
     setDraft("");
   };
+  const Container = embedded ? "div" : "main";
   return (
-    <main className="chat-screen">
+    <Container className="chat-screen">
       <p className="demo-label">{t("mockNotice")}</p>
       <div className="chat-messages" role="log" aria-live="polite">
         {!state.messages.length && <p className="subtext">{t("noMessages")}</p>}
@@ -56,15 +62,38 @@ export default function AIChat({
               <p className="bubble">
                 {message.key ? t(message.key) : message.text}
               </p>
-              {message.plan && <PlanSummary t={t} onDetails={onDetails} language={state.language} />}
+              {message.plan && (
+                <PlanSummary
+                  t={t}
+                  onDetails={onDetails}
+                  language={state.language}
+                />
+              )}
             </div>
           </div>
         ))}
         <div ref={end} />
       </div>
       <div className="chat-prompts">
-        <button className="chat-suggestion" onClick={() => send(t("chatPrompt"))}>{t("chatPrompt")}</button>
-        <button className="chat-suggestion" onClick={() => { setDraft(state.language === "fil" ? "Ano ang maluluto ko gamit ang laman ng pantry?" : "What can I cook with my pantry ingredients?"); input.current?.focus(); }}>{t("pantryCheck")}</button>
+        <button
+          className="chat-suggestion"
+          onClick={() => send(t("chatPrompt"))}
+        >
+          {t("chatPrompt")}
+        </button>
+        <button
+          className="chat-suggestion"
+          onClick={() => {
+            setDraft(
+              state.language === "fil"
+                ? "Ano ang maluluto ko gamit ang laman ng pantry?"
+                : "What can I cook with my pantry ingredients?",
+            );
+            input.current?.focus();
+          }}
+        >
+          {t("pantryCheck")}
+        </button>
       </div>
       <form
         className="chat-composer"
@@ -85,6 +114,6 @@ export default function AIChat({
           <Send />
         </button>
       </form>
-    </main>
+    </Container>
   );
 }
